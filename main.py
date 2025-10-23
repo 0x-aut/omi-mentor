@@ -110,7 +110,8 @@ async def webhook(session_id: str = Body(...), segments: List[Segment] = Body(..
     
     # check time for each while loop.
     checked_time = time.time() - start_time
-    end_time = segment_json[len(segment_json)-1]['end'] - checked_time
+    logger.info(f"checked time: {checked_time}")
+    end_time = checked_time - segment_json[len(segment_json)-1]['end']
     logger.info(f"Final segment is {segment_json[len(segment_json)-1]['end']}")
     logger.info(f"Time is {end_time}")
     
@@ -120,13 +121,12 @@ async def webhook(session_id: str = Body(...), segments: List[Segment] = Body(..
           mentorQueue.putItem_NoBlock(segment)
           logger.info(f"Current queue is: {mentorQueue}")
         except QueueShutDown:
-          queue_shutdown = True
           logger.info("Queue has been shut down and will not collect more segments")
           logger.info("Will process segments now")
     else:
       mentorQueue.shutDownQueue() # We want to shut down queue basically.
     
-    if queue_shutdown:
+    if mentorQueue.queue_shutdown:
      logger.info(f"Final queue is: {mentorQueue}")
      
      

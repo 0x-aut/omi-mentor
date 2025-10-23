@@ -5,6 +5,7 @@ from typing import Dict, List, Any
 
 class MentorQueue:  # This class is probably redundant but it will do
   def __init__(self):
+    self.queue_shutdown = False
     self.queue = asyncio.Queue(maxsize=0) # infinity in size for now
     
   async def putItem(self, item: Dict):
@@ -21,4 +22,4 @@ class MentorQueue:  # This class is probably redundant but it will do
   
   async def shutDownQueue(self):
     await self.queue.shutdown # No need for queuefull since it is theoretically infinite
-    
+    self.queue_shutdown = True
