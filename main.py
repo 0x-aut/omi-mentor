@@ -146,7 +146,7 @@ async def webhook(session_id: str = Body(...), segments: List[Segment] = Body(..
           
       # if advice:
         # logger.info(f"Advice has been created: {advice}")
-    return {"message": f"{advice}"}
+    # return {"message": f"{advice}"}
       # else:
       #   logger.error("An error occured while sending advice")
     # else:
