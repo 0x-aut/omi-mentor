@@ -6,4 +6,4 @@ REMINDER_CHECK_INTERVAL_IN_SECONDS = 30 # Check for reminders after every 30 sec
 REMINDER_MESSAGE = "Hey, what's up, did you try out my previous suggestion yet? How's it working out for you?"
 APP_ID = "testappidwillbechangedlater"
 
-AI_MODEL = "openai/gpt-oss-120b" # llama-3.3-70b-versatile
+AI_MODEL = "llama-3.3-70b-versatile"
