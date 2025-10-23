@@ -144,13 +144,13 @@ async def webhook(session_id: str = Body(...), segments: List[Segment] = Body(..
     #   logger.info("Resetting end conversation flag for future use")
     #   conversations.reset_end_convo_flag()    
           
-      if advice:
+      # if advice:
         # logger.info(f"Advice has been created: {advice}")
-        return {"message": f"{advice}"}
-      else:
-        logger.error("An error occured while sending advice")
-    else:
-      pass
+    return {"message": f"{advice}"}
+      # else:
+      #   logger.error("An error occured while sending advice")
+    # else:
+    #   pass
         
   except Exception as e:
     logger.error(f"Error processing webhook: {str(e)}", exc_info=True)
