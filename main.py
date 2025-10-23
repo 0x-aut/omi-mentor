@@ -91,7 +91,7 @@ queue_shutdown = False
 async def webhook(session_id: str = Body(...), segments: List[Segment] = Body(..., embed=True)):
   try:
     segment_json = [segment.model_dump(mode="json") for segment in segments]
-    logger.info(f"Segments converted to json are: {segment_json}")
+    # logger.info(f"Segments converted to json are: {segment_json}")
     
     # We want to ensure complete text past a certain period of time right?
     # '''
@@ -108,13 +108,11 @@ async def webhook(session_id: str = Body(...), segments: List[Segment] = Body(..
     # 
     # Since segments come it at differing times we want to block main thread until a certain time has elapsed
     
-    
-    # So we can store the message in a queue right? a global queue?
-    # And the queue is locked after a certain period of time
-    
     # check time for each while loop.
     checked_time = time.time() - start_time
     end_time = segment_json[len(segment_json)-1]['end'] - checked_time
+    logger.info(f"Final segment is {segment_json[len(segment_json)-1]['end']}")
+    logger.info(f"Time is {end_time}")
     
     if (end_time < 10):
       for segment in segment_json:
@@ -128,7 +126,7 @@ async def webhook(session_id: str = Body(...), segments: List[Segment] = Body(..
     else:
       mentorQueue.shutDownQueue() # We want to shut down queue basically.
     
-    if queue_shutdown == True:
+    if queue_shutdown:
      logger.info(f"Final queue is: {mentorQueue}")
      
      

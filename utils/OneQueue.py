@@ -15,6 +15,9 @@ class MentorQueue:  # This class is probably redundant but it will do
   
   async def putItem_NoBlock(self, item: Dict):
     await self.queue.put_nowait(item)
+    
+  async def getQueueSize(self):
+    return self.queue.qsize()
   
   async def shutDownQueue(self):
     await self.queue.shutdown # No need for queuefull since it is theoretically infinite
