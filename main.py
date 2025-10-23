@@ -119,9 +119,10 @@ async def webhook(session_id: str = Body(...), segments: List[Segment] = Body(..
       for segment in segment_json:
         try:
           mentorQueue.putItem_NoBlock(segment)
-          logger.info(f"Current queue is: {mentorQueue}")
+          logger.info(f"Current queue is: {mentorQueue.getQueueSize}")
         except QueueShutDown:
           logger.info("Queue has been shut down and will not collect more segments")
+          logger.info(f"Queue size is: {mentorQueue.getQueueSize}")
           logger.info("Will process segments now")
     else:
       mentorQueue.shutDownQueue() # We want to shut down queue basically.
