@@ -5,7 +5,7 @@ from typing import Optional
 import threading
 
 ## Imported python packages
-from utils.OneQueue import OneQueue
+from utils.OneQueue import MentorQueue
 from Logcode import *
 from data.constants import *
 from data.context import *
@@ -24,7 +24,7 @@ class Conversations:
   Perhaps it should also feature an interruption method? to get the context of an argument and interrupt where necessary
   """
   def __init__(self, silence_threshold=END_OF_CONVERSATION_IN_SECONDS):
-    self.onequeue = OneQueue()
+    self.onequeue = MentorQueue()
     # self.onequeue_queue = self.onequeue.queue
     self.last_request_time = time.time()
     self.conversations = conversations_list

@@ -1,4 +1,5 @@
 #Framework imports
+from asyncio.queues import QueueShutDown
 from fastapi import FastAPI, Body
 # from pydantic import BaseModel
 from fastapi.requests import Request
@@ -19,12 +20,13 @@ from prompt.notification import *
 from prompt.advice import *
 from Logcode import *
 from data.constants import *
+from data.context import queue_list
 from utils.notifications import *
 from utils.Buffer import MessageBuffer
 #from utils.gettime import get_transcript_on_time
 #from data.context import conversations_list, transcript_segment, unclean_context_list
 from utils.conversation import Conversations
-from utils.OneQueue import OneQueue
+from utils.OneQueue import MentorQueue
 
 
 app = FastAPI()
@@ -42,14 +44,17 @@ app.add_middleware(
   allow_headers=["*"]
 )
 
+start_time = time.time()
+logger.info(f"Application initialized. Start time: {datetime.fromtimestamp(start_time)}")
+
 
 # logger.info("Starting Mentor notification service")
 
 
 message_buffer = MessageBuffer()
-logger.info(f"Analysis interval set to {END_OF_CONVERSATION_IN_SECONDS} seconds")
+# logger.info(f"Analysis interval set to {END_OF_CONVERSATION_IN_SECONDS} seconds")
 conversations = Conversations()
-oneQueue = OneQueue()
+mentorQueue = MentorQueue()
 
 ''''''
 
@@ -63,12 +68,12 @@ At the moment though we can remove the notifications for now.
 # reminder_thread = threading.Thread(target=reminder_check_loop(message_buffer), daemon=True)
 # reminder_thread.start()
 
-# Silence checker for the request when the app starts
-@app.on_event("startup")
-async def startup_event():
-  asyncio.create_task(conversations.transcript_worker())
-  logger.info("Asyncio streaming data task started")
-  asyncio.sleep(2.0)
+# # Silence checker for the request when the app starts
+# @app.on_event("startup")
+# async def startup_event():
+#   asyncio.create_task(conversations.transcript_worker())
+#   logger.info("Asyncio streaming data task started")
+#   asyncio.sleep(2.0)
   
 # @app.on_event("shutdown")
 # async def shutdown_event():
@@ -79,22 +84,55 @@ async def startup_event():
 ### We need to change the way the server collects the trasncript from omi.
 
 main_advice = ""
-pseudo_segment_list = []
+# pseudo_segment_list = []
+queue_shutdown = False
 
 @app.post("/webhook")
 async def webhook(session_id: str = Body(...), segments: List[Segment] = Body(..., embed=True)):
-  logger.info("Recieved webhook POST request")
   try:
-    
-    message_id = None
-    
-    #print(segments) ## At the moment logs shows the segment being returned in a list of a tuple
-    ## Response is like this: [Segment(text="",...)]
-    
     segment_json = [segment.model_dump(mode="json") for segment in segments]
     logger.info(f"Segments converted to json are: {segment_json}")
     
+    # We want to ensure complete text past a certain period of time right?
+    # '''
+    # Segments converted to json are: 
+        # [
+        # {'text': 'Testing this, environment see if the', 'speaker': 'SPEAKER_0', 'speaker_id': 0, 'is_user': False, 'person_id': None, 'start': 0.0, 'end': 3.26}, 
+        # {'text': 'developer server works.', 'speaker': 'SPEAKER_0', 'speaker_id': 0, 'is_user': False, 'person_id': None, 'start': 4.7, 'end': 5.66}
+        # ]
+        # 
+    #Segments converted to json are: 
+        # [
+        # {'text': "Yeah. Let's see how it goes.", 'speaker': 'SPEAKER_0', 'speaker_id': 0, 'is_user': False, 'person_id': None, 'start': 7.67, 'end': 9.19}]
+    # '''
+    # 
+    # Since segments come it at differing times we want to block main thread until a certain time has elapsed
     
+    
+    # So we can store the message in a queue right? a global queue?
+    # And the queue is locked after a certain period of time
+    
+    # check time for each while loop.
+    checked_time = time.time() - start_time
+    end_time = segment_json[len(segment_json)-1]['end'] - checked_time
+    
+    if (end_time < 10):
+      for segment in segment_json:
+        try:
+          mentorQueue.putItem_NoBlock(segment)
+          logger.info(f"Current queue is: {mentorQueue}")
+        except QueueShutDown:
+          queue_shutdown = True
+          logger.info("Queue has been shut down and will not collect more segments")
+          logger.info("Will process segments now")
+    else:
+      mentorQueue.shutDownQueue() # We want to shut down queue basically.
+    
+    if queue_shutdown == True:
+     logger.info(f"Final queue is: {mentorQueue}")
+     
+     
+      
     # for segment in segment_json:
     #   pseudo_segment_list.append(segment)
     #   await conversations.put_transcript_in_queue(segment)
@@ -172,10 +210,6 @@ def status():
     "active_sessions": active_sessions,
     "uptime": uptime
   }
-
-# Add start time tracking
-start_time = time.time()
-logger.info(f"Application initialized. Start time: {datetime.fromtimestamp(start_time)}")
 
 if __name__ == '__main__':
   import uvicorn
